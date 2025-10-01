@@ -1,86 +1,90 @@
 name: Release
 
 on:
-    push:
-        branches:
-            - main
-            - master
-        paths-ignore:
-            - "**.md"
-            - "docs/**"
+  push:
+    branches:
+      - main
+      - master
+    paths-ignore:
+      - "**.md"
+      - "docs/**"
 
 jobs:
-    release:
-        name: Release
-        runs-on: ubuntu-latest
-        permissions:
-            contents: write
+  release:
+    name: Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
 
-        steps:
-            - name: Checkout code
-              uses: actions/checkout@v4
-              with:
-                  fetch-depth: 0
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
-            - name: Set up Go
-              uses: actions/setup-go@v5
-              with:
-                  go-version: "1.23"
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version: "1.23"
 
-            - name: Run tests
-              run: go test -v -race ./...
+      - name: Run tests
+        run: go test -v -race ./...
 
-            - name: Determine version bump
-              id: version
-              run: |
-                  LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-                  echo "Last tag: $LAST_TAG"
+      - name: Determine version bump
+        id: version
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          echo "Last tag: $LAST_TAG"
 
-                  # Get commits since last tag
-                  COMMITS=$(git log ${LAST_TAG}..HEAD --oneline)
+          # Get commits since last tag (or all commits if no previous tag)
+          if [ "$LAST_TAG" = "v0.0.0" ]; then
+            COMMITS=$(git log --oneline)
+          else
+            COMMITS=$(git log ${LAST_TAG}..HEAD --oneline)
+          fi
 
-                  # Parse commits for version bump
-                  if echo "$COMMITS" | grep -qiE "^[0-9a-f]+ FEATURE"; then
-                    # FEATURE commits trigger minor version bump
-                    echo "bump=minor" >> $GITHUB_OUTPUT
-                  elif echo "$COMMITS" | grep -qiE "^[0-9a-f]+ FIX"; then
-                    # FIX commits trigger patch version bump
-                    echo "bump=patch" >> $GITHUB_OUTPUT
-                  else
-                    # REFACTOR or other commits don't trigger a release
-                    echo "bump=none" >> $GITHUB_OUTPUT
-                  fi
+          # Parse commits for version bump
+          if echo "$COMMITS" | grep -qiE "^[0-9a-f]+ FEATURE"; then
+            # FEATURE commits trigger minor version bump
+            echo "bump=minor" >> $GITHUB_OUTPUT
+          elif echo "$COMMITS" | grep -qiE "^[0-9a-f]+ FIX"; then
+            # FIX commits trigger patch version bump
+            echo "bump=patch" >> $GITHUB_OUTPUT
+          else
+            # REFACTOR or other commits don't trigger a release
+            echo "bump=none" >> $GITHUB_OUTPUT
+          fi
 
-            - name: Calculate new version
-              id: new_version
-              if: steps.version.outputs.bump != 'none'
-              run: |
-                  LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
-                  VERSION=${LAST_TAG#v}
-                  IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
+      - name: Calculate new version
+        id: new_version
+        if: steps.version.outputs.bump != 'none'
+        run: |
+          LAST_TAG=$(git describe --tags --abbrev=0 2>/dev/null || echo "v0.0.0")
+          VERSION=${LAST_TAG#v}
+          IFS='.' read -r MAJOR MINOR PATCH <<< "$VERSION"
 
-                  if [ "${{ steps.version.outputs.bump }}" = "minor" ]; then
-                    MINOR=$((MINOR + 1))
-                    PATCH=0
-                  elif [ "${{ steps.version.outputs.bump }}" = "patch" ]; then
-                    PATCH=$((PATCH + 1))
-                  fi
+          if [ "${{ steps.version.outputs.bump }}" = "minor" ]; then
+            MINOR=$((MINOR + 1))
+            PATCH=0
+          elif [ "${{ steps.version.outputs.bump }}" = "patch" ]; then
+            PATCH=$((PATCH + 1))
+          fi
 
-                  NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
-                  echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
-                  echo "New version: $NEW_VERSION"
+          NEW_VERSION="v${MAJOR}.${MINOR}.${PATCH}"
+          echo "version=$NEW_VERSION" >> $GITHUB_OUTPUT
+          echo "New version: $NEW_VERSION"
 
-            - name: Create Release
-              if: steps.version.outputs.bump != 'none'
-              uses: actions/create-release@v1
-              env:
-                  GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-              with:
-                  tag_name: ${{ steps.new_version.outputs.version }}
-                  release_name: Release ${{ steps.new_version.outputs.version }}
-                  draft: false
-                  prerelease: false
-                  body: |
-                      ## Changes
+      - name: Create Release
+        if: steps.version.outputs.bump != 'none'
+        uses: actions/create-release@v1
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        with:
+          tag_name: ${{ steps.new_version.outputs.version }}
+          release_name: Release ${{ steps.new_version.outputs.version }}
+          draft: false
+          prerelease: false
+          body: |
+            ## Changes
 
-                      See commit history for details.
+            See commit history for details.
