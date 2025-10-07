@@ -59,9 +59,9 @@ import (
 
 func main() {
     logger, err := logbull.NewLogger(logbull.Config{
-        ProjectID: "12345678-1234-1234-1234-123456789012",
-        Host:      "http://localhost:4005",
-        APIKey:    "your-api-key", // optional
+        Host:      "http://LOGBULL_HOST",
+        ProjectID: "LOGBULL_PROJECT_ID",
+        APIKey:    "YOUR_API_KEY", // optional
         LogLevel:  logbull.INFO,
     })
     if err != nil {
@@ -92,8 +92,8 @@ import (
 
 func main() {
     logger, err := logbull.NewLogger(logbull.Config{
-        ProjectID: "YOUR_PROJECT_ID",
-        Host:      "http://YOUR_LOGBULL_SERVER:4005",
+        Host:      "http://LOGBULL_HOST",
+        ProjectID: "LOGBULL_PROJECT_ID",
         APIKey:    "YOUR_API_KEY", // optional
         LogLevel:  logbull.INFO,
     })
@@ -179,8 +179,8 @@ import (
 
 func main() {
     handler, err := logbull.NewSlogHandler(logbull.Config{
-        ProjectID: "YOUR_PROJECT_ID",
-        Host:      "http://YOUR_LOGBULL_SERVER:4005",
+        Host:      "http://LOGBULL_HOST",
+        ProjectID: "LOGBULL_PROJECT_ID",
         APIKey:    "YOUR_API_KEY",
     })
     if err != nil {
@@ -223,8 +223,8 @@ import (
 
 func main() {
     core, err := logbull.NewZapCore(logbull.Config{
-        ProjectID: "YOUR_PROJECT_ID",
-        Host:      "http://YOUR_LOGBULL_SERVER:4005",
+        Host:      "http://LOGBULL_HOST",
+        ProjectID: "LOGBULL_PROJECT_ID",
         APIKey:    "YOUR_API_KEY",
         LogLevel:  logbull.INFO,
     })
@@ -265,8 +265,8 @@ import (
 
 func main() {
     hook, err := logbull.NewLogrusHook(logbull.Config{
-        ProjectID: "YOUR_PROJECT_ID",
-        Host:      "http://YOUR_LOGBULL_SERVER:4005",
+        Host:      "http://LOGBULL_HOST",
+        ProjectID: "LOGBULL_PROJECT_ID",
         APIKey:    "YOUR_API_KEY",
         LogLevel:  logbull.INFO,
     })
