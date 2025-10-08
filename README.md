@@ -6,7 +6,7 @@
 [![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)](https://opensource.org/licenses/Apache-2.0)
 [![Go Version](https://img.shields.io/badge/go-1.21+-blue.svg)](https://golang.org/dl/)
 
-A Go library for sending logs to [LogBull](https://github.com/logbull/logbull) - a self-hosted log collection system.
+A Go library for sending logs to [LogBull](https://github.com/logbull/logbull) - a simple log collection system.
 
 </div>
 
@@ -126,7 +126,7 @@ func main() {
     })
 
     logger.Flush()
-    time.Sleep(2 * time.Second) // wait for logs to be sent
+    time.Sleep(5 * time.Second)
 }
 ```
 
