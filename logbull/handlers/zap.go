@@ -26,6 +26,20 @@ func NewZapCore(config core.Config) (*ZapCore, error) {
 		config.LogLevel = core.INFO
 	}
 
+	// Check if credentials are provided
+	if config.ProjectID == "" || config.Host == "" {
+		// No credentials: do nothing (Zap will print)
+		println(
+			"LogBull: No credentials provided for ZapCore. Handler is disabled. Logs will not be sent to LogBull server.",
+		)
+		return &ZapCore{
+			config:   &config,
+			sender:   nil,
+			fields:   []zapcore.Field{},
+			minLevel: convertLogLevelToZap(config.LogLevel),
+		}, nil
+	}
+
 	if err := validation.ValidateProjectID(config.ProjectID); err != nil {
 		return nil, err
 	}
@@ -78,6 +92,11 @@ func (z *ZapCore) Check(entry zapcore.Entry, ce *zapcore.CheckedEntry) *zapcore.
 }
 
 func (z *ZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
+	// If handler is disabled, do nothing
+	if z.sender == nil {
+		return nil
+	}
+
 	allFields := make([]zapcore.Field, len(z.fields)+len(fields))
 	copy(allFields, z.fields)
 	copy(allFields[len(z.fields):], fields)
@@ -96,12 +115,16 @@ func (z *ZapCore) Write(entry zapcore.Entry, fields []zapcore.Field) error {
 }
 
 func (z *ZapCore) Sync() error {
-	z.sender.Flush()
+	if z.sender != nil {
+		z.sender.Flush()
+	}
 	return nil
 }
 
 func (z *ZapCore) Shutdown() {
-	z.sender.Shutdown()
+	if z.sender != nil {
+		z.sender.Shutdown()
+	}
 }
 
 func (z *ZapCore) extractFields(fields []zapcore.Field) map[string]any {

@@ -25,6 +25,21 @@ func NewLogrusHook(config core.Config) (*LogrusHook, error) {
 		config.LogLevel = core.INFO
 	}
 
+	levels := levelsFromConfig(config.LogLevel)
+
+	// Check if credentials are provided
+	if config.ProjectID == "" || config.Host == "" {
+		// No credentials: do nothing (Logrus will print)
+		println(
+			"LogBull: No credentials provided for LogrusHook. Handler is disabled. Logs will not be sent to LogBull server.",
+		)
+		return &LogrusHook{
+			config: &config,
+			sender: nil,
+			levels: levels,
+		}, nil
+	}
+
 	if err := validation.ValidateProjectID(config.ProjectID); err != nil {
 		return nil, err
 	}
@@ -44,8 +59,6 @@ func NewLogrusHook(config core.Config) (*LogrusHook, error) {
 		return nil, err
 	}
 
-	levels := levelsFromConfig(config.LogLevel)
-
 	return &LogrusHook{
 		config: &config,
 		sender: sender,
@@ -58,6 +71,11 @@ func (h *LogrusHook) Levels() []logrus.Level {
 }
 
 func (h *LogrusHook) Fire(entry *logrus.Entry) error {
+	// If handler is disabled, do nothing
+	if h.sender == nil {
+		return nil
+	}
+
 	level := convertLogrusLevel(entry.Level)
 	message := entry.Message
 
@@ -78,11 +96,15 @@ func (h *LogrusHook) Fire(entry *logrus.Entry) error {
 }
 
 func (h *LogrusHook) Flush() {
-	h.sender.Flush()
+	if h.sender != nil {
+		h.sender.Flush()
+	}
 }
 
 func (h *LogrusHook) Shutdown() {
-	h.sender.Shutdown()
+	if h.sender != nil {
+		h.sender.Shutdown()
+	}
 }
 
 func convertLogrusLevel(level logrus.Level) core.LogLevel {

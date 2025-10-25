@@ -26,6 +26,20 @@ func NewSlogHandler(config core.Config) (*SlogHandler, error) {
 		config.LogLevel = core.INFO
 	}
 
+	// Check if credentials are provided
+	if config.ProjectID == "" || config.Host == "" {
+		// No credentials: do nothing (slog will print)
+		println(
+			"LogBull: No credentials provided for SlogHandler. Handler is disabled. Logs will not be sent to LogBull server.",
+		)
+		return &SlogHandler{
+			config: &config,
+			sender: nil,
+			attrs:  []slog.Attr{},
+			group:  "",
+		}, nil
+	}
+
 	if err := validation.ValidateProjectID(config.ProjectID); err != nil {
 		return nil, err
 	}
@@ -59,6 +73,11 @@ func (h *SlogHandler) Enabled(_ context.Context, level slog.Level) bool {
 }
 
 func (h *SlogHandler) Handle(_ context.Context, record slog.Record) error {
+	// If handler is disabled, do nothing
+	if h.sender == nil {
+		return nil
+	}
+
 	level := convertSlogLevel(record.Level)
 	message := record.Message
 
@@ -107,11 +126,15 @@ func (h *SlogHandler) WithGroup(name string) slog.Handler {
 }
 
 func (h *SlogHandler) Flush() {
-	h.sender.Flush()
+	if h.sender != nil {
+		h.sender.Flush()
+	}
 }
 
 func (h *SlogHandler) Shutdown() {
-	h.sender.Shutdown()
+	if h.sender != nil {
+		h.sender.Shutdown()
+	}
 }
 
 func (h *SlogHandler) addAttrToFields(fields map[string]any, attr slog.Attr, group string) {

@@ -74,6 +74,11 @@ func main() {
         "username": "john_doe",
         "ip":       "192.168.1.100",
     })
+
+    // We need to wait a bit in short-living programs when logs
+    // received by Log Bull. This is not needed in production
+    logger.Flush()
+    time.Sleep(3 * time.Second)
 }
 ```
 
@@ -125,8 +130,10 @@ func main() {
         "error_code": 500,
     })
 
+    // We need to wait a bit in short-living programs when logs
+    // received by Log Bull. This is not needed in production
     logger.Flush()
-    time.Sleep(5 * time.Second)
+    time.Sleep(3 * time.Second)
 }
 ```
 
@@ -163,6 +170,11 @@ transactionLogger.Info("Transaction completed", map[string]any{
     "currency": "USD",
 })
 // Includes all previous context + new transaction context
+
+// We need to wait a bit in short-living programs when logs
+// reach Log Bull. This is not needed in production
+logger.Flush()
+time.Sleep(3 * time.Second)
 ```
 
 ### 2. Standard Library slog Integration
@@ -203,8 +215,10 @@ func main() {
         ),
     )
 
+    // We need to wait a bit in short-living programs when logs
+    // received by Log Bull. This is not needed in production
     handler.Flush()
-    time.Sleep(2 * time.Second) // wait for logs to be sent
+    time.Sleep(3 * time.Second)
 }
 ```
 
@@ -245,8 +259,10 @@ func main() {
         zap.String("error", "connection timeout"),
     )
 
+    // We need to wait a bit in short-living programs when logs
+    // received by Log Bull. This is not needed in production
     logger.Sync()
-    time.Sleep(2 * time.Second) // wait for logs to be sent
+    time.Sleep(3 * time.Second)
 }
 ```
 
@@ -287,8 +303,10 @@ func main() {
         "amount":   99.99,
     }).Error("Payment failed")
 
+    // We need to wait a bit in short-living programs when logs
+    // received by Log Bull. This is not needed in production
     hook.Flush()
-    time.Sleep(2 * time.Second) // wait for logs to be sent
+    time.Sleep(3 * time.Second)
 }
 ```
 

@@ -27,6 +27,20 @@ func NewLogger(config Config) (*LogBullLogger, error) {
 		config.LogLevel = INFO
 	}
 
+	// Check if credentials are provided
+	if config.ProjectID == "" || config.Host == "" {
+		// Console-only mode: no credentials provided
+		fmt.Println(
+			"LogBull: No credentials provided. Running in console-only mode. Logs will only be printed to the console and not sent to LogBull server.",
+		)
+		return &LogBullLogger{
+			config:   &config,
+			sender:   nil,
+			minLevel: config.LogLevel,
+			context:  make(map[string]any),
+		}, nil
+	}
+
 	if err := validation.ValidateProjectID(config.ProjectID); err != nil {
 		return nil, err
 	}
@@ -89,11 +103,15 @@ func (l *LogBullLogger) WithContext(context map[string]any) *LogBullLogger {
 }
 
 func (l *LogBullLogger) Flush() {
-	l.sender.Flush()
+	if l.sender != nil {
+		l.sender.Flush()
+	}
 }
 
 func (l *LogBullLogger) Shutdown() {
-	l.sender.Shutdown()
+	if l.sender != nil {
+		l.sender.Shutdown()
+	}
 }
 
 func (l *LogBullLogger) log(level LogLevel, message string, fields map[string]any) {
@@ -123,7 +141,11 @@ func (l *LogBullLogger) log(level LogLevel, message string, fields map[string]an
 	}
 
 	l.printToConsole(entry)
-	l.sender.AddLog(entry)
+
+	// Only send to LogBull server if not in console-only mode
+	if l.sender != nil {
+		l.sender.AddLog(entry)
+	}
 }
 
 func (l *LogBullLogger) printToConsole(entry LogEntry) {
